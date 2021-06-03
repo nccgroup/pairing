@@ -5,7 +5,7 @@ use num_traits::Num;
 use std::time::Duration;
 
 // RUSTFLAGS="--emit asm" cargo bench
-// see, e.g.: target/release/deps/ff_12381-329599c0ba35fa2a.s
+// see, e.g.: mont1/target/release/deps/mont1-eb826ed791da90e8.s
 
 // Arbitrary input and expected values for 1000 iterations to ensure functionality
 #[rustfmt::skip]
@@ -22,7 +22,7 @@ const Y: W6x64 = W6x64 {
 
 #[rustfmt::skip]
 const EXP_SUM: W6x64 = W6x64 {
-    v: [0xbd3d31dc0303fa06, 0x704875edd38742a3, 0x60549f5927a1c745, 
+    v: [0xbd3d31dc0303fa06, 0x704875edd38742a3, 0x60549f5927a1c745,
         0xe234ee37eb7d3cee, 0xa13832d81ab0d5c5, 0x10fdd2f03da8f7ca],
 };
 
@@ -34,7 +34,7 @@ const EXP_DIFF: W6x64 = W6x64 {
 
 #[rustfmt::skip]
 const EXP_PROD: W6x64 = W6x64 {
-    v: [0xb54cf29498954919, 0x8f2491ddb5cef751, 0xb155fe8acce5c7d3, 
+    v: [0xb54cf29498954919, 0x8f2491ddb5cef751, 0xb155fe8acce5c7d3,
         0x448683648418e8dd, 0xf3599187e803fc7e, 0x1118bd439ac24052],
 };
 

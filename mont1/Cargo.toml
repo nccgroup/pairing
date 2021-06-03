@@ -8,14 +8,10 @@ repository = "https://github.com/nccgroup/pairing"
 readme = "README.md"
 description = "Montgomery arithmetic demonstrator"
 categories = ["cryptography"]
-keywords = ["cryptography", "pairing", "elliptic", "BLS12-381"]
+keywords = ["cryptography", "pairing", "elliptic", "BLS12-381", "Montgomery"]
 
 
 [dependencies]
-
-
-[build-dependencies]
-cc = "1.0.67"
 
 
 [dev-dependencies]
