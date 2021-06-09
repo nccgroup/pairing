@@ -2,7 +2,7 @@
 
 This repository contains the working Rust code that corresponds to an
 ongoing series of blog posts covering optimizations in pairing-based
-cryptography (using BLS12-381 as the reference curve).
+cryptography using BLS12-381 as the reference curve.
 
 > **Please note:** This code is for educational purposes, has not undergone
 > a security audit and is not suitable for production. Use at your own risk.
@@ -17,7 +17,7 @@ implementation. The next blog post will further optimize the
 (relatively) heavyweight multiplication routine in bare-metal x86-64
 assembly language.
 
-* The blog post: <https://research.nccgroup.com/2020/08/13/pairing-over-bls12-381-part-3-pairing/>
+* The blog post: <https://research.nccgroup.com/2021/06/09/optimizing-pairing-based-cryptography-montgomery-arithmetic-in-rust/>
 * The full code and README is in the `mont1` subdirectory: <https://github.com/nccgroup/pairing/tree/main/mont1>
 
 

@@ -14,7 +14,7 @@ def extended_euclidean(a, b):
     return a, previous_x, previous_y
 
 a, Rp, Np = extended_euclidean(R, N)         # R*Rp + N*Np == 1
-Rp1 = Rp + N; Np1 = -1*(Np - R)              # Rp1 and Np1 are positive
+Rp1 = Rp + N; Np1 = -1 * (Np - R)            # Rp1 and Np1 are positive
 print(a == 1, 0 < Rp1 < N, 0 < Np1 < R, R*Rp1 - N*Np1 == 1)
 print(f'Rp1 = {hex(Rp1)}\nNp1 = {hex(Np1)}')
 print(N*Np1 == R*Rp1 - 1, N*Np1 % R == R-1)  # N*Np1 = -1 mod R

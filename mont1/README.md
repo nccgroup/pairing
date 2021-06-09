@@ -7,7 +7,7 @@ post covering Montgomery Arithmetic in Rust.
 > **Please note:** This code is for educational purposes, has not undergone
 > a security audit and is not suitable for production. Use at your own risk.
 
-* The blog post: <https://research.nccgroup.com/2020/08/13/pairing-over-bls12-381-part-3-pairing/>
+* The blog post: <https://research.nccgroup.com/2021/06/09/optimizing-pairing-based-cryptography-montgomery-arithmetic-in-rust/>
 
 > This is the first code-centric blog post in a new series about selected 
 > optimizations found in pairing-based cryptography. Pairing operations are 
@@ -35,7 +35,6 @@ $ cargo bench
 The arithmetic routines can be found in <https://github.com/nccgroup/pairing/blob/main/mont1/src/arith.rs>
 
 The benchmarking code can be found in <https://github.com/nccgroup/pairing/blob/main/mont1/src/bench.rs>
-
 
 ---
 Copyright 2021 Eric Schorn; Licensed under the 3-Clause BSD License.

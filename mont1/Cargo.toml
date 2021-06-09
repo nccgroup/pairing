@@ -12,6 +12,7 @@ keywords = ["cryptography", "pairing", "elliptic", "BLS12-381", "Montgomery"]
 
 
 [dependencies]
+# No dependencies!
 
 
 [dev-dependencies]

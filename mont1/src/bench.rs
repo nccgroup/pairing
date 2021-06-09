@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use mont1::arith::{fe_add, fe_mont_mul, fe_sub, W6x64};
+use mont1::arith::{fe_add, fe_sub, fe_mont_mul, W6x64};
 use num_bigint::BigUint;
 use num_traits::Num;
 use std::time::Duration;

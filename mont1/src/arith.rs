@@ -12,7 +12,7 @@ const N: [u64; 6] = [
 ];
 
 #[allow(clippy::needless_range_loop)]
-#[inline]
+#[inline] // Assume properly reduced inputs and outputs
 pub fn fe_add(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let mut sum = W6x64::default(); // Initializes to zero
     let mut carry = false;
@@ -46,7 +46,7 @@ const CORRECTION: [u64; 6] = [
 ];
 
 #[allow(clippy::needless_range_loop)]
-#[inline]
+#[inline] // Assume properly reduced inputs and outputs
 pub fn fe_sub(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let mut diff = W6x64::default();
     let mut borrow_sub = false;
@@ -99,7 +99,7 @@ const N_PRIME: u64 = 0x89f3_fffc_fffc_fffd;
 
 #[allow(clippy::cast_possible_truncation)]
 #[inline]
-// Effectively result_mont = (a_mont * b_mont * R^{-1}) mod N
+// Effectively result_mont = (a_mont * b_mont * R^{-1}) mod N; Assume properly reduced inputs and outputs
 pub fn fe_mont_mul(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let mut temp = [0_u64; 12];
 

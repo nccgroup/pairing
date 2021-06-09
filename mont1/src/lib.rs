@@ -10,7 +10,7 @@ extern crate lazy_static;
 
 #[cfg(test)]
 mod tests {
-    use crate::arith::{fe_add, fe_mont_mul, fe_sub, fe_to_mont, fe_to_norm, W6x64};
+    use crate::arith::{fe_add, fe_sub, fe_mont_mul, fe_to_mont, fe_to_norm, W6x64};
     use num_bigint::BigUint;
     use num_traits::Num;
     use rand::Rng;
