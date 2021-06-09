@@ -3,3 +3,4 @@ Cargo.lock
 
 # Project exclude paths
 /mont1/target/
+.idea/
