@@ -141,118 +141,160 @@ pub fn fe_mont_mul(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     }
 }
 
+macro_rules! full_add {
+    ($carry_in:ident, $operand_a:tt, $operand_b:ident, $sum:ident, $carry_out:ident) => {
+        let (sum0, carry0) = $operand_a.overflowing_add($operand_b);
+        let (sum1, carry1) = sum0.overflowing_add(u64::from($carry_in));
+        let $sum = sum1;
+        let $carry_out = carry0 | carry1;
+    };
+}
+
+macro_rules! full_add2 {
+    ($carry_in:ident, $operand_a:ident, $operand_b:ident, $sum:ident, $carry_out:ident) => {
+        let (sum0, carry0) = $operand_a.overflowing_add($operand_b);
+        let (sum1, carry1) = sum0.overflowing_add(u64::from($carry_in));
+        $sum = sum1;
+        let $carry_out = carry0 | carry1;
+    }
+}
+
+macro_rules! full_sub {
+    ($borrow_in:ident, $operand_a:ident, $operand_b:ident[$index_b:literal], $diff:ident.v[$index_d:literal], $borrow_out:ident) => {
+        let (diff0, borrow0) = $operand_a.overflowing_sub($operand_b[$index_b]);
+        let (diff1, borrow1) = diff0.overflowing_sub(u64::from($borrow_in));
+        $diff.v[$index_d] = diff1;
+        let $borrow_out = borrow0 | borrow1;
+    }
+}
+
+macro_rules! mulx {
+    ($operand_a:tt, $operand_b:tt, $hi:ident, $lo:ident) => {
+        let hilo = u128::from($operand_a) * u128::from($operand_b);
+        let $hi = (hilo >> 64) as u64;
+        let $lo = hilo as u64;
+    };
+    ($operand_a:ident.v[$index_a:literal], $operand_b:ident.v[$index_b:literal], $hi:ident, $lo:ident) => {
+        mulx!(($operand_a.v[$index_a]), ($operand_b.v[$index_b]), $hi, $lo)
+    };
+    ($operand_a:ident[$index_a:literal], $operand_b:ident, $hi:ident, $lo:ident) => {
+        mulx!(($operand_a[$index_a]), ($operand_b), $hi, $lo)
+    };
+    ($operand_a:ident.v[$index_a:literal], $operand_b:ident.v[$index_b:ident], $hi:ident, $lo:ident) => {
+    mulx!(($operand_a.v[$index_a]), ($operand_b.v[$index_b]), $hi, $lo)
+    };
+}
+
 // Expected perf FOM = 6*(6+6) single-cycle mul and 6*(2*13) half-cycle adds = 150 cycles * (1/4.5GHz) = 36nS; Actual = 35nS
 #[rustfmt::skip]
 pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
-    let hilo = u128::from(a.v[0]) * u128::from(b.v[0]); let hi_a0b0 = (hilo >> 64) as u64; let r10a = hilo as u64;
-    let hilo = u128::from(a.v[1]) * u128::from(b.v[0]); let hi_a1b0 = (hilo >> 64) as u64; let r11a = hilo as u64;
-    let hilo = u128::from(a.v[2]) * u128::from(b.v[0]); let hi_a2b0 = (hilo >> 64) as u64; let r12a = hilo as u64;
-    let hilo = u128::from(a.v[3]) * u128::from(b.v[0]); let hi_a3b0 = (hilo >> 64) as u64; let r13a = hilo as u64;
-    let hilo = u128::from(a.v[4]) * u128::from(b.v[0]); let hi_a4b0 = (hilo >> 64) as u64; let r14a = hilo as u64;
-    let hilo = u128::from(a.v[5]) * u128::from(b.v[0]); let hi_a5b0 = (hilo >> 64) as u64; let r15a = hilo as u64;
+    let (mut r10, mut r11, mut r12, mut r13, mut r14, mut r15);
 
-    let res = r11a.overflowing_add(hi_a0b0); let r11b = res.0; let cf0_a = res.1;
-    let res1 = r12a.overflowing_add(hi_a1b0); let res2 = res1.0.overflowing_add(u64::from(cf0_a)); let r12b = res2.0; let cf0_b = res1.1 | res2.1;
-    let res1 = r13a.overflowing_add(hi_a2b0); let res2 = res1.0.overflowing_add(u64::from(cf0_b)); let r13b = res2.0; let cf0_c = res1.1 | res2.1;
-    let res1 = r14a.overflowing_add(hi_a3b0); let res2 = res1.0.overflowing_add(u64::from(cf0_c)); let r14b = res2.0; let cf0_d = res1.1 | res2.1;
-    let res1 = r15a.overflowing_add(hi_a4b0); let res2 = res1.0.overflowing_add(u64::from(cf0_d)); let r15b = res2.0; let cf0_e = res1.1 | res2.1;
+    mulx!(a.v[0], b.v[0], hi_a0b0, r10a);
+    mulx!(a.v[1], b.v[0], hi_a1b0, r11a);
+    mulx!(a.v[2], b.v[0], hi_a2b0, r12a);
+    mulx!(a.v[3], b.v[0], hi_a3b0, r13a);
+    mulx!(a.v[4], b.v[0], hi_a4b0, r14a);
+    mulx!(a.v[5], b.v[0], hi_a5b0, r15a);
+
+    let (r11b, cf0_a) = r11a.overflowing_add(hi_a0b0);
+    full_add!(cf0_a, r12a, hi_a1b0, r12b, cf0_b);
+    full_add!(cf0_b, r13a, hi_a2b0, r13b, cf0_c);
+    full_add!(cf0_c, r14a, hi_a3b0, r14b, cf0_d);
+    full_add!(cf0_d, r15a, hi_a4b0, r15b, cf0_e);
     let r16a = hi_a5b0.wrapping_add(u64::from(cf0_e));
 
     let rdx = N_PRIME.wrapping_mul(r10a);
 
-    let hilo = u128::from(N[0]) * u128::from(rdx); let hi_n0rdx = (hilo >> 64) as u64; let lo_n0rdx = hilo as u64;
-    let hilo = u128::from(N[1]) * u128::from(rdx); let hi_n1rdx = (hilo >> 64) as u64; let lo_n1rdx = hilo as u64;
-    let hilo = u128::from(N[2]) * u128::from(rdx); let hi_n2rdx = (hilo >> 64) as u64; let lo_n2rdx = hilo as u64;
-    let hilo = u128::from(N[3]) * u128::from(rdx); let hi_n3rdx = (hilo >> 64) as u64; let lo_n3rdx = hilo as u64;
-    let hilo = u128::from(N[4]) * u128::from(rdx); let hi_n4rdx = (hilo >> 64) as u64; let lo_n4rdx = hilo as u64;
-    let hilo = u128::from(N[5]) * u128::from(rdx); let hi_n5rdx = (hilo >> 64) as u64; let lo_n5rdx = hilo as u64;
+    mulx!(N[0], rdx, hi_n0rdx, lo_n0rdx);
+    mulx!(N[1], rdx, hi_n1rdx, lo_n1rdx);
+    mulx!(N[2], rdx, hi_n2rdx, lo_n2rdx);
+    mulx!(N[3], rdx, hi_n3rdx, lo_n3rdx);
+    mulx!(N[4], rdx, hi_n4rdx, lo_n4rdx);
+    mulx!(N[5], rdx, hi_n5rdx, lo_n5rdx);
 
-    let res = r11b.overflowing_add(hi_n0rdx); let r11c = res.0; let cf1_a = res.1;
-    let res1 = r12b.overflowing_add(hi_n1rdx); let res2 = res1.0.overflowing_add(u64::from(cf1_a)); let r12c = res2.0; let cf1_b = res1.1 | res2.1;
-    let res1 = r13b.overflowing_add(hi_n2rdx); let res2 = res1.0.overflowing_add(u64::from(cf1_b)); let r13c = res2.0; let cf1_c = res1.1 | res2.1;
-    let res1 = r14b.overflowing_add(hi_n3rdx); let res2 = res1.0.overflowing_add(u64::from(cf1_c)); let r14c = res2.0; let cf1_d = res1.1 | res2.1;
-    let res1 = r15b.overflowing_add(hi_n4rdx); let res2 = res1.0.overflowing_add(u64::from(cf1_d)); let r15c = res2.0; let cf1_e = res1.1 | res2.1;
+    let (r11c, cf1_a) = r11b.overflowing_add(hi_n0rdx);
+    full_add!(cf1_a, r12b, hi_n1rdx, r12c, cf1_b);
+    full_add!(cf1_b, r13b, hi_n2rdx, r13c, cf1_c);
+    full_add!(cf1_c, r14b, hi_n3rdx, r14c, cf1_d);
+    full_add!(cf1_d, r15b, hi_n4rdx, r15c, cf1_e);
     let r16b = r16a.wrapping_add(hi_n5rdx);
 
-    let res = r10a.overflowing_add(lo_n0rdx); let of1_a = res.1 as u64;
-    let res1 = r11c.overflowing_add(lo_n1rdx); let res2 = res1.0.overflowing_add(u64::from(of1_a)); let mut r10 = res2.0; let of1_b = res1.1 | res2.1;
-    let res1 = r12c.overflowing_add(lo_n2rdx); let res2 = res1.0.overflowing_add(u64::from(of1_b)); let mut r11 = res2.0; let of1_c = res1.1 | res2.1;
-    let res1 = r13c.overflowing_add(lo_n3rdx); let res2 = res1.0.overflowing_add(u64::from(of1_c)); let mut r12 = res2.0; let of1_d = res1.1 | res2.1;
-    let res1 = r14c.overflowing_add(lo_n4rdx); let res2 = res1.0.overflowing_add(u64::from(of1_d)); let mut r13 = res2.0; let of1_e = res1.1 | res2.1;
-    let res1 = r15c.overflowing_add(lo_n5rdx); let res2 = res1.0.overflowing_add(u64::from(of1_e)); let mut r14 = res2.0; let of1_f = res1.1 | res2.1;
+    let (_, of1_a) = r10a.overflowing_add(lo_n0rdx);
+    full_add2!(of1_a, r11c, lo_n1rdx, r10, of1_b);
+    full_add2!(of1_b, r12c, lo_n2rdx, r11, of1_c);
+    full_add2!(of1_c, r13c, lo_n3rdx, r12, of1_d);
+    full_add2!(of1_d, r14c, lo_n4rdx, r13, of1_e);
+    full_add2!(of1_e, r15c, lo_n5rdx, r14, of1_f);
 
-    let mut r15 = r16b.wrapping_add(u64::from(cf1_e) + u64::from(of1_f));
+    r15 = r16b.wrapping_add(u64::from(cf1_e) + u64::from(of1_f));
 
     for i in 1..6 {
-        let hilo = u128::from(a.v[0]) * u128::from(b.v[i]); let hi_a0vi = (hilo >> 64) as u64; let lo_a0vi = hilo as u64;
-        let hilo = u128::from(a.v[1]) * u128::from(b.v[i]); let hi_a1vi = (hilo >> 64) as u64; let lo_a1vi = hilo as u64;
-        let hilo = u128::from(a.v[2]) * u128::from(b.v[i]); let hi_a2vi = (hilo >> 64) as u64; let lo_a2vi = hilo as u64;
-        let hilo = u128::from(a.v[3]) * u128::from(b.v[i]); let hi_a3vi = (hilo >> 64) as u64; let lo_a3vi = hilo as u64;
-        let hilo = u128::from(a.v[4]) * u128::from(b.v[i]); let hi_a4vi = (hilo >> 64) as u64; let lo_a4vi = hilo as u64;
-        let hilo = u128::from(a.v[5]) * u128::from(b.v[i]); let hi_a5vi = (hilo >> 64) as u64; let lo_a5vi = hilo as u64;
+
+        mulx!(a.v[0], b.v[i], hi_a0vi, lo_a0vi);
+        mulx!(a.v[1], b.v[i], hi_a1vi, lo_a1vi);
+        mulx!(a.v[2], b.v[i], hi_a2vi, lo_a2vi);
+        mulx!(a.v[3], b.v[i], hi_a3vi, lo_a3vi);
+        mulx!(a.v[4], b.v[i], hi_a4vi, lo_a4vi);
+        mulx!(a.v[5], b.v[i], hi_a5vi, lo_a5vi);
 
         let res0 = r11.overflowing_add(hi_a0vi); let r11a = res0.0; let cf2_a = res0.1;
-        let res0 = r12.overflowing_add(hi_a1vi); let res1 = res0.0.overflowing_add(u64::from(cf2_a)); let r12a = res1.0; let cf2_b = res0.1 | res1.1;
-        let res0 = r13.overflowing_add(hi_a2vi); let res1 = res0.0.overflowing_add(u64::from(cf2_b)); let r13a = res1.0; let cf2_c = res0.1 | res1.1;
-        let res0 = r14.overflowing_add(hi_a3vi); let res1 = res0.0.overflowing_add(u64::from(cf2_c)); let r14a = res1.0; let cf2_d = res0.1 | res1.1;
-        let res0 = r15.overflowing_add(hi_a4vi); let res1 = res0.0.overflowing_add(u64::from(cf2_d)); let r15a = res1.0; let cf2_e = res0.1 | res1.1;
+        full_add!(cf2_a, r12, hi_a1vi, r12a, cf2_b);
+        full_add!(cf2_b, r13, hi_a2vi, r13a, cf2_c);
+        full_add!(cf2_c, r14, hi_a3vi, r14a, cf2_d);
+        full_add!(cf2_d, r15, hi_a4vi, r15a, cf2_e);
+
         let r16c = hi_a5vi.wrapping_add(u64::from(cf2_e));
 
-        let res8 = r10.overflowing_add(lo_a0vi); let r10a = res8.0; let of2_a = res8.1;
-        let res8 = r11a.overflowing_add(lo_a1vi); let res9 = res8.0.overflowing_add(u64::from(of2_a)); let r11a = res9.0; let of2_b = res8.1 | res9.1;
-        let res8 = r12a.overflowing_add(lo_a2vi); let res9 = res8.0.overflowing_add(u64::from(of2_b)); let r12b = res9.0; let of2_c = res8.1 | res9.1;
-        let res8 = r13a.overflowing_add(lo_a3vi); let res9 = res8.0.overflowing_add(u64::from(of2_c)); let r13b = res9.0; let of2_d = res8.1 | res9.1;
-        let res8 = r14a.overflowing_add(lo_a4vi); let res9 = res8.0.overflowing_add(u64::from(of2_d)); let r14b = res9.0; let of2_e = res8.1 | res9.1;
-        let res8 = r15a.overflowing_add(lo_a5vi); let res9 = res8.0.overflowing_add(u64::from(of2_e)); let r15b = res9.0; let of2_f = res8.1 | res9.1;
+        let res1 = r10.overflowing_add(lo_a0vi); let r10a = res1.0; let of2_a = res1.1;
+        full_add!(of2_a, r11a, lo_a1vi, r11b, of2_b);
+        full_add!(of2_b, r12a, lo_a2vi, r12b, of2_c);
+        full_add!(of2_c, r13a, lo_a3vi, r13b, of2_d);
+        full_add!(of2_d, r14a, lo_a4vi, r14b, of2_e);
+        full_add!(of2_e, r15a, lo_a5vi, r15b, of2_f);
         let r16d = r16c.wrapping_add(of2_f as u64);
 
         let rdx = N_PRIME.wrapping_mul(r10a);
 
-        let hilo = u128::from(N[0]) * u128::from(rdx); let hi_n0rdx = (hilo >> 64) as u64; let lo_n0rdx = hilo as u64;
-        let hilo = u128::from(N[1]) * u128::from(rdx); let hi_n1rdx = (hilo >> 64) as u64; let lo_n1rdx = hilo as u64;
-        let hilo = u128::from(N[2]) * u128::from(rdx); let hi_n2rdx = (hilo >> 64) as u64; let lo_n2rdx = hilo as u64;
-        let hilo = u128::from(N[3]) * u128::from(rdx); let hi_n3rdx = (hilo >> 64) as u64; let lo_n3rdx = hilo as u64;
-        let hilo = u128::from(N[4]) * u128::from(rdx); let hi_n4rdx = (hilo >> 64) as u64; let lo_n4rdx = hilo as u64;
-        let hilo = u128::from(N[5]) * u128::from(rdx); let hi_n5rdx = (hilo >> 64) as u64; let lo_n5rdx = hilo as u64;
+        mulx!(N[0], rdx, hi_n0rdx, lo_n0rdx);
+        mulx!(N[1], rdx, hi_n1rdx, lo_n1rdx);
+        mulx!(N[2], rdx, hi_n2rdx, lo_n2rdx);
+        mulx!(N[3], rdx, hi_n3rdx, lo_n3rdx);
+        mulx!(N[4], rdx, hi_n4rdx, lo_n4rdx);
+        mulx!(N[5], rdx, hi_n5rdx, lo_n5rdx);
 
-        let res0 = r11a.overflowing_add(hi_n0rdx); let r11b = res0.0; let cf3_a = res0.1;
-        let res0 = r12b.overflowing_add(hi_n1rdx); let res1 = res0.0.overflowing_add(u64::from(cf3_a)); let r12c = res1.0; let cf3_b = res0.1 | res1.1;
-        let res0 = r13b.overflowing_add(hi_n2rdx); let res1 = res0.0.overflowing_add(u64::from(cf3_b)); let r13c = res1.0; let cf3_c = res0.1 | res1.1;
-        let res0 = r14b.overflowing_add(hi_n3rdx); let res1 = res0.0.overflowing_add(u64::from(cf3_c)); let r14c = res1.0; let cf3_d = res0.1 | res1.1;
-        let res0 = r15b.overflowing_add(hi_n4rdx); let res1 = res0.0.overflowing_add(u64::from(cf3_d)); let r15c = res1.0; let cf3_e = res0.1 | res1.1;
+        let res2 = r11b.overflowing_add(hi_n0rdx); let r11c = res2.0; let cf3_a = res2.1;
+
+        full_add!(cf3_a, r12b, hi_n1rdx, r12c, cf3_b);
+        full_add!(cf3_b, r13b, hi_n2rdx, r13c, cf3_c);
+        full_add!(cf3_c, r14b, hi_n3rdx, r14c, cf3_d);
+        full_add!(cf3_d, r15b, hi_n4rdx, r15c, cf3_e);
         let r16e = r16d.wrapping_add(hi_n5rdx);
 
-        let res8 = r10a.overflowing_add(lo_n0rdx); let of3_a = res8.1;
-        let res8 = r11b.overflowing_add(lo_n1rdx); let res9 = res8.0.overflowing_add(u64::from(of3_a)); r10 = res9.0; let of3_b = res8.1 | res9.1;
-        let res8 = r12c.overflowing_add(lo_n2rdx); let res9 = res8.0.overflowing_add(u64::from(of3_b)); r11 = res9.0; let of3_c = res8.1 | res9.1;
-        let res8 = r13c.overflowing_add(lo_n3rdx); let res9 = res8.0.overflowing_add(u64::from(of3_c)); r12 = res9.0; let of3_d = res8.1 | res9.1;
-        let res8 = r14c.overflowing_add(lo_n4rdx); let res9 = res8.0.overflowing_add(u64::from(of3_d)); r13 = res9.0; let of3_e = res8.1 | res9.1;
-        let res8 = r15c.overflowing_add(lo_n5rdx); let res9 = res8.0.overflowing_add(u64::from(of3_e)); r14 = res9.0; let of3_f = res8.1 | res9.1;
+        let res3 = r10a.overflowing_add(lo_n0rdx); let of3_a = res3.1;
+        full_add2!(of3_a, r11c, lo_n1rdx, r10, of3_b);
+        full_add2!(of3_b, r12c, lo_n2rdx, r11, of3_c);
+        full_add2!(of3_c, r13c, lo_n3rdx, r12, of3_d);
+        full_add2!(of3_d, r14c, lo_n4rdx, r13, of3_e);
+        full_add2!(of3_e, r15c, lo_n5rdx, r14, of3_f);
 
         r15 = r16e.wrapping_add(u64::from(cf3_e) + u64::from(of3_f));
     }
 
-    let res0 = r10.overflowing_sub(N[0]); let bor0 = res0.1;
-    let res1a = r11.overflowing_sub(N[1]); let res1b = res1a.0.overflowing_sub(u64::from(bor0)); let bor1 = res1a.1 | res1b.1;
-    let res2a = r12.overflowing_sub(N[2]); let res2b = res2a.0.overflowing_sub(u64::from(bor1)); let bor2 = res2a.1 | res2b.1;
-    let res3a = r13.overflowing_sub(N[3]); let res3b = res3a.0.overflowing_sub(u64::from(bor2)); let bor3 = res3a.1 | res3b.1;
-    let res4a = r14.overflowing_sub(N[4]); let res4b = res4a.0.overflowing_sub(u64::from(bor3)); let bor4 = res4a.1 | res4b.1;
-    let res5a = r15.overflowing_sub(N[5]); let res5b = res5a.0.overflowing_sub(u64::from(bor4)); let bor5 = res5a.1 | res5b.1;
+    let res0 = r10.overflowing_sub(N[0]); let bor0 = res0.1; result.v[0] = res0.0;
+    full_sub!(bor0, r11, N[1], result.v[1], bor1);
+    full_sub!(bor1, r12, N[2], result.v[2], bor2);
+    full_sub!(bor2, r13, N[3], result.v[3], bor3);
+    full_sub!(bor3, r14, N[4], result.v[4], bor4);
+    full_sub!(bor4, r15, N[5], result.v[5], bor5);
 
-    if bor5 {
+    if bor5 {  // This is not constant-time
         result.v[0] = r10;
         result.v[1] = r11;
         result.v[2] = r12;
         result.v[3] = r13;
         result.v[4] = r14;
         result.v[5] = r15;
-    } else {
-        result.v[0] = res0.0;
-        result.v[1] = res1b.0;
-        result.v[2] = res2b.0;
-        result.v[3] = res3b.0;
-        result.v[4] = res4b.0;
-        result.v[5] = res5b.0;
     }
 }
 
