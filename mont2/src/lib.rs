@@ -123,7 +123,6 @@ mod tests {
         let mut b_mont = W6x64::default();
 
         for _i in 0..10_000_000 {
-            //eprintln!("Here we go {}", i);
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
@@ -144,8 +143,7 @@ mod tests {
         let mut a_mont = W6x64::default();
         let mut b_mont = W6x64::default();
 
-        for _i in 0..1_000_000 {
-            //eprintln!("Here we go {}", i);
+        for _i in 0..i32::MAX { //3_000_000_000 {
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
@@ -168,7 +166,6 @@ mod tests {
         let mut b_mont = W6x64::default();
 
         for _i in 0..1_000_000 {
-            //eprintln!("Here we go {}", i);
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));

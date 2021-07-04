@@ -1,11 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use mont2::arith::{fe_add, fe_sub, fe_mont_mul, W6x64, fe_mont_mul_intrinsics, fe_mont_mul_raw};
+use mont2::arith::{fe_add, fe_mont_mul, fe_mont_mul_intrinsics, fe_mont_mul_raw, fe_sub, W6x64};
 use mont2::fe_mont_mul_asm;
 use num_bigint::BigUint;
 use num_traits::Num;
 use std::time::Duration;
 
 // RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
+// RUSTFLAGS="--emit asm -C target-feature=+bmi2" cargo bench
 // see, e.g.: mont2/target/release/deps/mont2-eb826ed791da90e8.s
 
 // Arbitrary input and expected values for 1000 iterations to ensure functionality
@@ -121,7 +122,6 @@ fn mul_rust_intrinsics(x: &W6x64, y: &W6x64, expected: &W6x64) {
     assert_eq!(&result, expected);
 }
 
-
 // Montgomery multiplication x1000 written in Rust
 fn mul_rust_raw(x: &W6x64, y: &W6x64, expected: &W6x64) {
     let mut xx = x.clone();
@@ -187,7 +187,7 @@ pub fn bench_mul_rust_intrinsics(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().measurement_time(Duration::new(60, 0));
-    //targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_intrinsics, bench_mul_rust_raw, bench_mul_asm
-    targets = bench_mul_rust, bench_mul_rust_raw, bench_mul_rust_intrinsics, bench_mul_asm
+    targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_intrinsics, bench_mul_rust_raw, bench_mul_asm
+    //targets = bench_mul_rust, bench_mul_rust_raw, bench_mul_rust_intrinsics, bench_mul_asm
 }
 criterion_main!(benches);
