@@ -4,7 +4,9 @@
 
 pub mod arith;
 
-// RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
+// Brenchmark with `cargo bench` as well as the following:
+//   RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
+//   RUSTFLAGS="--emit asm -C target-feature=+bmi2" cargo bench
 
 extern "C" {
     pub fn fe_mont_mul_asm(result: &mut u64, a: &u64, b: &u64);
@@ -49,8 +51,7 @@ mod tests {
         result
     }
 
-    #[allow(dead_code)]
-    //#[test]
+    #[test]
     fn test_fe_add() {
         let mut actual_mont = W6x64::default();
         let mut actual_norm = [0_u64; 6];
@@ -71,8 +72,7 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
-    //#[test]
+    #[test]
     fn test_fe_sub() {
         let mut actual_mont = W6x64::default();
         let mut actual_norm = [0_u64; 6];
@@ -93,15 +93,27 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
-    //#[test]
+    #[test]
+    fn test_fe_to_mont_to_norm() {
+        let mut a_mont = W6x64::default();
+        let mut actual_norm = [0_u64; 6];
+
+        for _i in 0..1_000_000 {
+            let a_big = rnd_big_mod_n();
+            fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
+            fe_to_norm(&mut actual_norm, &a_mont);
+            assert_eq!(big_to_6u64(&a_big), actual_norm);
+        }
+    }
+
+    #[test]
     fn test_fe_mont_mul() {
         let mut actual_mont = W6x64::default();
         let mut actual_norm = [0_u64; 6];
         let mut a_mont = W6x64::default();
         let mut b_mont = W6x64::default();
 
-        for _i in 0..5_000_000 {
+        for _i in 0..1_000_000 {
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
@@ -122,7 +134,7 @@ mod tests {
         let mut a_mont = W6x64::default();
         let mut b_mont = W6x64::default();
 
-        for _i in 0..10_000_000 {
+        for _i in 0..1_000_000 {
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
@@ -137,13 +149,13 @@ mod tests {
     }
 
     #[test]
-    fn test_fe_mont_raw() {
+    fn test_fe_mont_mul_raw() {
         let mut actual_mont = W6x64::default();
         let mut actual_norm = [0_u64; 6];
         let mut a_mont = W6x64::default();
         let mut b_mont = W6x64::default();
 
-        for _i in 0..i32::MAX { //3_000_000_000 {
+        for _i in 0..1_000_000 {
             let a_big = rnd_big_mod_n();
             let b_big = rnd_big_mod_n();
             fe_to_mont(&mut a_mont, &big_to_6u64(&a_big));
@@ -157,8 +169,7 @@ mod tests {
         }
     }
 
-    #[allow(dead_code)]
-    //#[test]
+    #[test]
     fn test_fe_mont_mul_asm() {
         let mut actual_mont = W6x64::default();
         let mut actual_norm = [0_u64; 6];

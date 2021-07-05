@@ -13,8 +13,8 @@ const N: [u64; 6] = [
     0x6477_4b84_f385_12bf, 0x4b1b_a7b6_434b_acd7, 0x1a01_11ea_397f_e69a,
 ];
 
-#[allow(clippy::needless_range_loop)] // Allows `for i in 0..6`
-                                      // Assume properly reduced inputs and outputs
+#[allow(clippy::needless_range_loop)]
+// Assume properly reduced inputs and outputs
 pub fn fe_add(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let mut sum = W6x64::default(); // Initializes to zero
     let mut carry = false;
@@ -113,7 +113,7 @@ pub fn fe_mont_mul(result: &mut W6x64, a: &W6x64, b: &W6x64) {
             temp[i + j] = hilo as u64;
             carry = (hilo >> 64) as u64;
         }
-        temp[i + 6] += carry;
+        temp[i + 6] = temp[i + 6].wrapping_add(carry);
 
         let m: u64 = temp[i].wrapping_mul(N_PRIME);
 
@@ -124,7 +124,7 @@ pub fn fe_mont_mul(result: &mut W6x64, a: &W6x64, b: &W6x64) {
             temp[i + j] = hilo as u64;
             carry = (hilo >> 64) as u64;
         }
-        temp[i + 6] += carry;
+        temp[i + 6] = temp[i + 6].wrapping_add(carry);
     }
 
     let mut dec = [0_u64; 6];
@@ -150,6 +150,7 @@ macro_rules! full_add {
     };
 }
 
+// Same as above, but uses/expects previously declared (mut) sum variable
 macro_rules! full_add2 {
     ($carry_in:ident, $a:ident, $b:ident, $sum:ident, $carry_out:ident) => {
         let (sum0, carry0) = $a.overflowing_add($b);
@@ -178,7 +179,6 @@ macro_rules! mulx {
 
 // Expected perf FOM = 12m + 6a + 13a/2 + 5*(12m + 13a/2) + 20 = 137/4.2GHz = 32.6ns; Act = 31.3nS
 #[allow(clippy::similar_names, clippy::shadow_unrelated, unused_parens)]
-#[rustfmt::skip]
 pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let (mut r10, mut r11, mut r12, mut r13, mut r14, mut r15);
 
@@ -189,7 +189,7 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     mulx!((a.v[4]), (b.v[0]), hi_a4b0, r14a);
     mulx!((a.v[5]), (b.v[0]), hi_a5b0, r15a);
 
-    let (r11b, cf0_a) = r11a.overflowing_add(hi_a0b0);  // cf0_a -> carry flag, trace 0, step a
+    let (r11b, cf0_a) = r11a.overflowing_add(hi_a0b0); // cf0_a -> carry flag, trace 0, step a
     full_add!(cf0_a, r12a, hi_a1b0, r12b, cf0_b);
     full_add!(cf0_b, r13a, hi_a2b0, r13b, cf0_c);
     full_add!(cf0_c, r14a, hi_a3b0, r14b, cf0_d);
@@ -212,7 +212,7 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     full_add!(cf1_d, r15b, hi_n4rdx, r15c, cf1_e);
     let r16b = hi_n5rdx.wrapping_add(u64::from(cf1_e)).wrapping_add(r16a);
 
-    let (_, of1_a) = r10a.overflowing_add(lo_n0rdx);  // of1_a -> overflow flag, trace 0, step a
+    let (_, of1_a) = r10a.overflowing_add(lo_n0rdx); // of1_a -> overflow flag, trace 1, step a
     full_add2!(of1_a, r11c, lo_n1rdx, r10, of1_b);
     full_add2!(of1_b, r12c, lo_n2rdx, r11, of1_c);
     full_add2!(of1_c, r13c, lo_n3rdx, r12, of1_d);
@@ -221,7 +221,6 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     r15 = r16b.wrapping_add(u64::from(of1_f));
 
     for i in 1..6 {
-
         mulx!((a.v[0]), (b.v[i]), hi_a0bi, lo_a0bi);
         mulx!((a.v[1]), (b.v[i]), hi_a1bi, lo_a1bi);
         mulx!((a.v[2]), (b.v[i]), hi_a2bi, lo_a2bi);
@@ -229,14 +228,18 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
         mulx!((a.v[4]), (b.v[i]), hi_a4bi, lo_a4bi);
         mulx!((a.v[5]), (b.v[i]), hi_a5bi, lo_a5bi);
 
-        let res0 = r11.overflowing_add(hi_a0bi); let r11a = res0.0; let cf2_a = res0.1;
+        let res0 = r11.overflowing_add(hi_a0bi);
+        let r11a = res0.0;
+        let cf2_a = res0.1;
         full_add!(cf2_a, r12, hi_a1bi, r12a, cf2_b);
         full_add!(cf2_b, r13, hi_a2bi, r13a, cf2_c);
         full_add!(cf2_c, r14, hi_a3bi, r14a, cf2_d);
         full_add!(cf2_d, r15, hi_a4bi, r15a, cf2_e);
         let r16c = hi_a5bi.wrapping_add(u64::from(cf2_e));
 
-        let res1 = r10.overflowing_add(lo_a0bi); let r10a = res1.0; let of2_a = res1.1;
+        let res1 = r10.overflowing_add(lo_a0bi);
+        let r10a = res1.0;
+        let of2_a = res1.1;
         full_add!(of2_a, r11a, lo_a1bi, r11b, of2_b);
         full_add!(of2_b, r12a, lo_a2bi, r12b, of2_c);
         full_add!(of2_c, r13a, lo_a3bi, r13b, of2_d);
@@ -253,14 +256,17 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
         mulx!((N[4]), rdx, hi_n4rdx, lo_n4rdx);
         mulx!((N[5]), rdx, hi_n5rdx, lo_n5rdx);
 
-        let res2 = r11b.overflowing_add(hi_n0rdx); let r11c = res2.0; let cf3_a = res2.1;
+        let res2 = r11b.overflowing_add(hi_n0rdx);
+        let r11c = res2.0;
+        let cf3_a = res2.1;
         full_add!(cf3_a, r12b, hi_n1rdx, r12c, cf3_b);
         full_add!(cf3_b, r13b, hi_n2rdx, r13c, cf3_c);
         full_add!(cf3_c, r14b, hi_n3rdx, r14c, cf3_d);
         full_add!(cf3_d, r15b, hi_n4rdx, r15c, cf3_e);
         let r16e = hi_n5rdx.wrapping_add(u64::from(cf3_e)).wrapping_add(r16d);
 
-        let res3 = r10a.overflowing_add(lo_n0rdx); let of3_a = res3.1;
+        let res3 = r10a.overflowing_add(lo_n0rdx);
+        let of3_a = res3.1;
         full_add2!(of3_a, r11c, lo_n1rdx, r10, of3_b);
         full_add2!(of3_b, r12c, lo_n2rdx, r11, of3_c);
         full_add2!(of3_c, r13c, lo_n3rdx, r12, of3_d);
@@ -269,14 +275,17 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
         r15 = r16e.wrapping_add(u64::from(of3_f));
     }
 
-    let res0 = r10.overflowing_sub(N[0]); let bor0 = res0.1; result.v[0] = res0.0;
+    let res0 = r10.overflowing_sub(N[0]);
+    let bor0 = res0.1;
+    result.v[0] = res0.0;
     full_sub!(bor0, r11, (N[1]), (result.v[1]), bor1);
     full_sub!(bor1, r12, (N[2]), (result.v[2]), bor2);
     full_sub!(bor2, r13, (N[3]), (result.v[3]), bor3);
     full_sub!(bor3, r14, (N[4]), (result.v[4]), bor4);
     full_sub!(bor4, r15, (N[5]), (result.v[5]), bor5);
-    
-    if bor5 {  // Mimic CMOV, but this is not constant-time!!
+
+    // Mimic CMOV, but this is not constant-time!!
+    if bor5 {
         result.v[0] = r10;
         result.v[1] = r11;
         result.v[2] = r12;
@@ -290,10 +299,9 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
 pub fn fe_mont_mul_intrinsics(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     unsafe {
         let (mut r11, mut r12, mut r13, mut r14, mut r15, mut r16, mut rbx) = (0, 0, 0, 0, 0, 0, 0);
-        let mut rax;
 
         let mut r10 = _mulx_u64(a.v[0], b.v[0], &mut r11);
-        rax = _mulx_u64(a.v[1], b.v[0], &mut r12);
+        let mut rax = _mulx_u64(a.v[1], b.v[0], &mut r12);
         let tmp0 = r11.overflowing_add(rax);
         let cf0_a = u8::from(tmp0.1);
         r11 = tmp0.0;
@@ -392,7 +400,8 @@ pub fn fe_mont_mul_intrinsics(result: &mut W6x64, a: &W6x64, b: &W6x64) {
         let bor4 = _subborrow_u64(bor3, r14, N[4], &mut result.v[4]);
         let bor5 = _subborrow_u64(bor4, r15, N[5], &mut result.v[5]);
 
-        if bor5 != 0 {  // Mimic CMOV, but this is not constant-time!!
+        // Mimic CMOV, but this is not constant-time!!
+        if bor5 != 0 {
             result.v[0] = r10;
             result.v[1] = r11;
             result.v[2] = r12;
