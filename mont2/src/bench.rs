@@ -187,7 +187,8 @@ pub fn bench_mul_rust_intrinsics(c: &mut Criterion) {
 criterion_group! {
     name = benches;
     config = Criterion::default().measurement_time(Duration::new(60, 0));
-    targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_intrinsics, bench_mul_rust_raw, bench_mul_asm
+    //targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_intrinsics, bench_mul_rust_raw, bench_mul_asm
     //targets = bench_mul_rust, bench_mul_rust_raw, bench_mul_rust_intrinsics, bench_mul_asm
+    targets = bench_mul_asm
 }
 criterion_main!(benches);
