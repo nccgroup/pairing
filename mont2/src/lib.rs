@@ -4,7 +4,7 @@
 
 pub mod arith;
 
-// Brenchmark with `cargo bench` as well as the following:
+// Benchmark with `cargo bench` but prefer the following:
 //   RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
 //   RUSTFLAGS="--emit asm -C target-feature=+bmi2" cargo bench
 
