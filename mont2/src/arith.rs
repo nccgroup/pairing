@@ -1,10 +1,6 @@
-use std::arch::x86_64::{_addcarryx_u64, _mulx_u64, _subborrow_u64};
+// Copyright 2021 Eric Schorn; Licensed under the 3-Clause BSD License.
 
-#[derive(Default, Clone, Copy, Debug, PartialEq)] // Non constant-time Eq
-#[repr(C)]
-pub struct W6x64 {
-    pub v: [u64; 6], // From least significant limb [0] to most significant [5]
-}
+use std::arch::x86_64::{_addcarryx_u64, _mulx_u64, _subborrow_u64};
 
 #[rustfmt::skip]  // Save some vertical space
 // BLS12-381 field prime modulus N, least significant limb first
@@ -97,7 +93,13 @@ pub fn fe_to_norm(result: &mut [u64; 6], a: &W6x64) {
     *result = result_w6x64.v
 }
 
-const N_PRIME: u64 = 0x89f3_fffc_fffc_fffd;
+#[derive(Default, Clone, Copy, Debug, PartialEq)] // Non constant-time Eq
+#[repr(C)]
+pub struct W6x64 {
+    pub v: [u64; 6], // From least significant limb [0] to most significant [5]
+}
+
+const N_PRIME: u64 = 0x89f3_fffc_fffc_fffd;  // See constant.py
 
 #[allow(clippy::cast_possible_truncation)]
 // Effectively result_mont = (a_mont * b_mont * R^{-1}) mod N; Assume properly reduced input/output
@@ -190,7 +192,7 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     mulx!((a.v[5]), (b.v[0]), hi_a5b0, r15a);
 
     let (r11b, cf0_a) = r11a.overflowing_add(hi_a0b0);
-    full_add!(cf0_a, r12a, hi_a1b0, r12b, cf0_b);  // cf0_b -> carry flag, trace 0, step b
+    full_add!(cf0_a, r12a, hi_a1b0, r12b, cf0_b); // cf0_b -> carry flag, trace 0, step b
     full_add!(cf0_b, r13a, hi_a2b0, r13b, cf0_c);
     full_add!(cf0_c, r14a, hi_a3b0, r14b, cf0_d);
     full_add!(cf0_d, r15a, hi_a4b0, r15b, cf0_e);
@@ -213,7 +215,7 @@ pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let r16b = hi_n5rdx.wrapping_add(u64::from(cf1_e)).wrapping_add(r16a);
 
     let (_, of1_a) = r10a.overflowing_add(lo_n0rdx);
-    full_add2!(of1_a, r11c, lo_n1rdx, r10, of1_b);  // of1_b -> overflow flag, trace 1, step b
+    full_add2!(of1_a, r11c, lo_n1rdx, r10, of1_b); // of1_b -> overflow flag, trace 1, step b
     full_add2!(of1_b, r12c, lo_n2rdx, r11, of1_c);
     full_add2!(of1_c, r13c, lo_n3rdx, r12, of1_d);
     full_add2!(of1_d, r14c, lo_n4rdx, r13, of1_e);

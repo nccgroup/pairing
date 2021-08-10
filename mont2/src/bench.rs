@@ -1,9 +1,14 @@
+// Copyright 2021 Eric Schorn; Licensed under the 3-Clause BSD License.
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use mont2::arith::{fe_add, fe_mont_mul, fe_mont_mul_intrinsics, fe_mont_mul_raw, fe_sub, W6x64};
 use mont2::fe_mont_mul_asm;
 use num_bigint::BigUint;
 use num_traits::Num;
 use std::time::Duration;
+
+#[macro_use]
+extern crate lazy_static;
 
 // RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
 // RUSTFLAGS="--emit asm -C target-feature=+bmi2" cargo bench
@@ -40,8 +45,12 @@ const EXP_PROD: W6x64 = W6x64 {
         0x448683648418e8dd, 0xf3599187e803fc7e, 0x1118bd439ac24052],
 };
 
-const MODULUS_STR: &str = "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab";
-const EXPECTED_STR: &str = "169d18ab74c03e6199a9ec1869d2a2a0d53be1749c6acd5028310a17f06383087d69cb203aa01ae0a73a546f5db98555";
+//const EXPECTED_STR: &str = "169d18ab74c03e6199a9ec1869d2a2a0d53be1749c6acd5028310a17f06383087d69cb203aa01ae0a73a546f5db98555";
+
+lazy_static! { static ref EXPECTED: BigUint = BigUint::from_str_radix(
+    "169d18ab74c03e6199a9ec1869d2a2a0d53be1749c6acd5028310a17f06383087d69cb203aa01ae0a73a546f5db98555",
+    16).unwrap();
+}
 
 // Montgomery addition x1000 written in Rust
 fn add_rust(x: &W6x64, y: &W6x64, expected: &W6x64) {
@@ -69,12 +78,24 @@ fn sub_rust(x: &W6x64, y: &W6x64, expected: &W6x64) {
     assert_eq!(&result, expected);
 }
 
+lazy_static! { static ref MODULUS: BigUint = BigUint::from_str_radix(
+    "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+    16).unwrap();
+}
+
+// Reference multiplication with BigUint
+fn mul_biguint(result: &mut BigUint, a: &BigUint, b: &BigUint) {
+    *result = (a * b) % &(*MODULUS);
+}
+
 // Multiplication x1000 with BigUint
-fn mul_big(x: &BigUint, y: &BigUint, expected: &BigUint, modulus: &BigUint) {
+fn mul_big(x: &BigUint, y: &BigUint, expected: &BigUint) {
     let mut xx = x.clone();
     let mut yy = y.clone();
     for _i in 0..1_000 {
-        let result = (&xx * &yy) % modulus;
+        let mut result = BigUint::default();
+        //let result = (&xx * &yy) % modulus;
+        mul_biguint(&mut result, &xx, &yy);
         yy = xx;
         xx = result;
     }
@@ -149,10 +170,8 @@ pub fn bench_sub(c: &mut Criterion) {
 pub fn bench_mul_big(c: &mut Criterion) {
     let x = BigUint::from(u128::MAX);
     let y = BigUint::from(u64::MAX);
-    let expected = BigUint::from_str_radix(EXPECTED_STR, 16).unwrap();
-    let modulus = BigUint::from_str_radix(MODULUS_STR, 16).unwrap();
     c.bench_function("Multiplication by BigUint X 1000 iterations", |b| {
-        b.iter(|| mul_big(&x, &y, &expected, &modulus))
+        b.iter(|| mul_big(&x, &y, &(*EXPECTED)))
     });
 }
 

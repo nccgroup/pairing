@@ -14,6 +14,7 @@ post covering xxxxx
 This code runs on Unbuntu, Mac OS and Windows. After installing Rust, run:
 
 ~~~
+# Requires: sudo apt install clang
 $ git clone https://github.com/nccgroup/pairing.git
 $ cd pairing/mont2
 $ cargo test

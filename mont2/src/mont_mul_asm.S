@@ -1,3 +1,5 @@
+# Copyright 2021 Eric Schorn; Licensed under the 3-Clause BSD License.
+
 .global fe_mont_mul_asm
 .global _fe_mont_mul_asm
 
