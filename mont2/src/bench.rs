@@ -158,56 +158,55 @@ fn mul_rust_raw(x: &W6x64, y: &W6x64, expected: &W6x64) {
 
 // Harness for addition with inputs and expected result
 pub fn bench_add(c: &mut Criterion) {
-    c.bench_function("Addition X 1000 iterations", |b| b.iter(|| add_rust(&X, &Y, &EXP_SUM)));
+    c.bench_function("1. Addition X 1000 iterations", |b| b.iter(|| add_rust(&X, &Y, &EXP_SUM)));
 }
 
 // Harness for subtraction with inputs and expected result
 pub fn bench_sub(c: &mut Criterion) {
-    c.bench_function("Subtraction X 1000 iterations", |b| b.iter(|| sub_rust(&X, &Y, &EXP_DIFF)));
+    c.bench_function("2. Subtraction X 1000 iterations", |b| b.iter(|| sub_rust(&X, &Y, &EXP_DIFF)));
 }
 
 // Harness for multiplication by BigUint with inputs and expected result
 pub fn bench_mul_big(c: &mut Criterion) {
     let x = BigUint::from(u128::MAX);
     let y = BigUint::from(u64::MAX);
-    c.bench_function("Multiplication by BigUint X 1000 iterations", |b| {
+    c.bench_function("3. Multiplication by BigUint X 1000 iterations", |b| {
         b.iter(|| mul_big(&x, &y, &(*EXPECTED)))
     });
 }
 
 // Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust(c: &mut Criterion) {
-    c.bench_function("Multiplication in Rust (mont1 blog) X 1000 iterations", |b| {
+    c.bench_function("4. Multiplication in Rust (mont1 blog) X 1000 iterations", |b| {
         b.iter(|| mul_rust(&X, &Y, &EXP_PROD))
-    });
-}
-
-pub fn bench_mul_asm(c: &mut Criterion) {
-    c.bench_function("Multiplication in Rust with assembly X 1000 iterations", |b| {
-        b.iter(|| mul_asm(&X, &Y, &EXP_PROD))
     });
 }
 
 // Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust_raw(c: &mut Criterion) {
-    c.bench_function("Multiplication in RAW Rust X 1000 iterations", |b| {
+    c.bench_function("5. Multiplication in flat Rust X 1000 iterations", |b| {
         b.iter(|| mul_rust_raw(&X, &Y, &EXP_PROD))
     });
 }
 
 // Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust_intrinsics(c: &mut Criterion) {
-    c.bench_function("Multiplication in Rust with intrinsics X 1000 iterations", |b| {
+    c.bench_function("6. Multiplication in Rust with intrinsics X 1000 iterations", |b| {
         b.iter(|| mul_rust_intrinsics(&X, &Y, &EXP_PROD))
     });
 }
 
-// Run all five harnesses
+pub fn bench_mul_asm(c: &mut Criterion) {
+    c.bench_function("7. Multiplication in Rust with assembly X 1000 iterations", |b| {
+        b.iter(|| mul_asm(&X, &Y, &EXP_PROD))
+    });
+}
+
+// Run all seven harnesses
 criterion_group! {
     name = benches;
     config = Criterion::default().measurement_time(Duration::new(60, 0));
-    targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_intrinsics, bench_mul_rust_raw, bench_mul_asm
-    //targets = bench_mul_rust, bench_mul_rust_raw, bench_mul_rust_intrinsics, bench_mul_asm
-    //targets = bench_mul_asm
+    targets = bench_add, bench_sub, bench_mul_big, bench_mul_rust, bench_mul_rust_raw,
+    bench_mul_rust_intrinsics, bench_mul_asm
 }
 criterion_main!(benches);

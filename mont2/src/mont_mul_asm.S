@@ -79,25 +79,25 @@ fe_mont_mul_asm:
     adoxq   %rbx, %r15              # A[5] in %r15 for next round
 
 # The 'inner loop' as a macro, to be instantiated 5 times w/ specific offset
-.macro partial_product offset:req
+.macro partial_product offset:req   # offset indexes into desired b.v[i]
     xorq    %r8, %r8                # Clear flags and save zero for use later
     movq    \offset(%r9), %rdx      # Load b.v[i] into %rdx for following mulx
     mulxq   0(%rsi), %rax, %rbx     # a.v[0] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r10              # Add lo into %r10 for red[0]
     adoxq   %rbx, %r11              # Add hi into %r11 as partial_red[1]
-    mulxq   8(%rsi), %rax, %rbx     # a.v[1] * %rdx:b.v[1] -> lo:%rax, hi:%rbx
+    mulxq   8(%rsi), %rax, %rbx     # a.v[1] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r11              # Add lo into %r11 as red[1]
     adoxq   %rbx, %r12              # Add hi into %r12 as partial_red[2]
-    mulxq   16(%rsi), %rax, %rbx    # a.v[2] * %rdx:b.v[1] -> lo:%rax, hi:%rbx
+    mulxq   16(%rsi), %rax, %rbx    # a.v[2] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r12              # Add lo into %r11 as red[1]
     adoxq   %rbx, %r13              # Add hi into %r13 as partial_red[3]
-    mulxq   24(%rsi), %rax, %rbx    # a.v[2] * %rdx:b.v[1] -> lo:%rax, hi:%rbx
+    mulxq   24(%rsi), %rax, %rbx    # a.v[3] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r13              # Add lo into %r13 as red[2]
     adoxq   %rbx, %r14              # Add hi into %r14 as partial_red[4]
-    mulxq   32(%rsi), %rax, %rbx    # a.v[2] * %rdx:b.v[1] -> lo:%rax, hi:%rbx
+    mulxq   32(%rsi), %rax, %rbx    # a.v[4] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r14              # Add lo into %r14 as red[4]
     adoxq   %rbx, %r15              # Add hi into %r15 as partial_red[5]
-    mulxq   40(%rsi), %rax, %rbx    # a.v[2] * %rdx:b.v[1] -> lo:%rax, hi:%rbx
+    mulxq   40(%rsi), %rax, %rbx    # a.v[5] * %rdx:b.v[i] -> lo:%rax, hi:%rbx
     adcxq   %rax, %r15              # Add lo into %r15 as red[5]
     adoxq   %r8, %rbx               # Add hi into %rbp as partial_red[6]
     adcxq   %rbx, %r8               # bring carry_in to red[6]
@@ -154,8 +154,8 @@ fe_mont_mul_asm:
     sbbq    40(%rcx), %rsi
 
     # If there was final borrow, we must store original
-    cmovcq  %r10, %r8               # Unlikely to be constant-time...
-    cmovcq  %r11, %r9               # ...but program flow is 'same'
+    cmovcq  %r10, %r8
+    cmovcq  %r11, %r9
     cmovcq  %r12, %rax
     cmovcq  %r13, %rbx
     cmovcq  %r14, %rdx
