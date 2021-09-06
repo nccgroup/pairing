@@ -99,7 +99,7 @@ pub struct W6x64 {
     pub v: [u64; 6], // From least significant limb [0] to most significant [5]
 }
 
-const N_PRIME: u64 = 0x89f3_fffc_fffc_fffd;  // See constant.py
+const N_PRIME: u64 = 0x89f3_fffc_fffc_fffd; // See constant.py
 
 #[allow(clippy::cast_possible_truncation)]
 // Effectively result_mont = (a_mont * b_mont * R^{-1}) mod N; Assume properly reduced input/output
@@ -157,7 +157,7 @@ macro_rules! full_add2 {
     ($carry_in:ident, $a:ident, $b:ident, $sum:ident, $carry_out:ident) => {
         let (sum0, carry0) = $a.overflowing_add($b);
         let (sum1, carry1) = sum0.overflowing_add(u64::from($carry_in));
-        $sum = sum1;
+        $sum = sum1;  // diff is here
         let $carry_out = carry0 | carry1;
     };
 }
@@ -179,7 +179,7 @@ macro_rules! mulx {
     };
 }
 
-// Expected perf FOM = 12m + 6a + 13a/2 + 5*(12m + 13a/2) + 20 = 137/4.2GHz = 32.6ns; Act = 31.3nS
+// Expected perf FOM = 12m + 6a + 13a/2 + 5*(12m + 13a/2) + 20 = 137/4.2GHz = 32.6ns; Act = 34nS
 #[allow(clippy::similar_names, clippy::shadow_unrelated, unused_parens)]
 pub fn fe_mont_mul_raw(result: &mut W6x64, a: &W6x64, b: &W6x64) {
     let (mut r10, mut r11, mut r12, mut r13, mut r14, mut r15);

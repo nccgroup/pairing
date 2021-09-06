@@ -2,32 +2,39 @@
 
 
 This subdirectory contains the working code corresponding to the blog
-post covering xxxxx
+post covering Montgomery Multiplication in Assembly.
 
 > **Please note:** This code is for educational purposes, has not undergone
 > a security audit and is not suitable for production. Use at your own risk.
 
-* The blog post: <https://blog.link.here>
+* The blog post: <https://coming.soon>
 
-> Blog post description here
+> This is the second blog post in a new code-centric series about selected 
+> optimizations found in pairing-based cryptography. The first post in this 
+> series covered modular Montgomery arithmetic in Rust from start to finish. 
+> This second post takes the Montgomery multiplication algorithm developed 
+> in Rust even further to seek the maximum performance a modern x86-64 machine 
+> can deliver from an implementation hand-written in assembly language. 
+> Several specialized instructions and advanced micro-architectural features 
+> enabling increased parallelism result in the Montgomery multiplication 
+> routine running more than 15X faster than a generic Big Integer implementation.
 
-This code runs on Unbuntu, Mac OS and Windows. After installing Rust, run:
+This code runs on Unbuntu, Mac OS and Windows. After installing Rust, git and clang
+run:
 
 ~~~
-# Requires: sudo apt install clang
 $ git clone https://github.com/nccgroup/pairing.git
 $ cd pairing/mont2
 $ cargo test
-$ cargo bench
 $ RUSTFLAGS="--emit asm -C target-cpu=native" cargo bench
 $ RUSTFLAGS="--emit asm -C target-feature=+bmi2" cargo bench
 ~~~
 
-The arithmetic routines can be found in <https://github.com/nccgroup/pairing/blob/main/mont1/src/arith.rs>
+The arithmetic routines can be found in <https://github.com/nccgroup/pairing/blob/main/mont2/src/arith.rs>
 
-The Montgomery multiplication assembly code can be found in <https://github.com/nccgroup/pairing/blob/mont2/mont2/src/mont_mul_asm.S>
+The Montgomery multiplication assembly code can be found in <https://github.com/nccgroup/pairing/blob/main/mont2/src/mont_mul_asm.S>
 
-The benchmarking code can be found in <https://github.com/nccgroup/pairing/blob/main/mont1/src/bench.rs>
+The benchmarking code can be found in <https://github.com/nccgroup/pairing/blob/main/mont2/src/bench.rs>
 
 Example results
 

@@ -45,8 +45,6 @@ const EXP_PROD: W6x64 = W6x64 {
         0x448683648418e8dd, 0xf3599187e803fc7e, 0x1118bd439ac24052],
 };
 
-//const EXPECTED_STR: &str = "169d18ab74c03e6199a9ec1869d2a2a0d53be1749c6acd5028310a17f06383087d69cb203aa01ae0a73a546f5db98555";
-
 lazy_static! { static ref EXPECTED: BigUint = BigUint::from_str_radix(
     "169d18ab74c03e6199a9ec1869d2a2a0d53be1749c6acd5028310a17f06383087d69cb203aa01ae0a73a546f5db98555",
     16).unwrap();
@@ -102,7 +100,7 @@ fn mul_big(x: &BigUint, y: &BigUint, expected: &BigUint) {
     assert_eq!(&xx, expected)
 }
 
-// Montgomery multiplication x1000 written in Rust
+// Montgomery multiplication x1000 written in Rust (mont1 blog)
 fn mul_rust(x: &W6x64, y: &W6x64, expected: &W6x64) {
     let mut xx = x.clone();
     let mut yy = y.clone();
@@ -130,7 +128,7 @@ fn mul_asm(x: &W6x64, y: &W6x64, expected: &W6x64) {
     assert_eq!(&result, expected);
 }
 
-// Montgomery multiplication x1000 written in Rust
+// Montgomery multiplication x1000 written in Rust with intrinsics
 fn mul_rust_intrinsics(x: &W6x64, y: &W6x64, expected: &W6x64) {
     let mut xx = x.clone();
     let mut yy = y.clone();
@@ -143,7 +141,7 @@ fn mul_rust_intrinsics(x: &W6x64, y: &W6x64, expected: &W6x64) {
     assert_eq!(&result, expected);
 }
 
-// Montgomery multiplication x1000 written in Rust
+// Montgomery multiplication x1000 written in Rust (backported asm)
 fn mul_rust_raw(x: &W6x64, y: &W6x64, expected: &W6x64) {
     let mut xx = x.clone();
     let mut yy = y.clone();
@@ -163,7 +161,9 @@ pub fn bench_add(c: &mut Criterion) {
 
 // Harness for subtraction with inputs and expected result
 pub fn bench_sub(c: &mut Criterion) {
-    c.bench_function("2. Subtraction X 1000 iterations", |b| b.iter(|| sub_rust(&X, &Y, &EXP_DIFF)));
+    c.bench_function("2. Subtraction X 1000 iterations", |b| {
+        b.iter(|| sub_rust(&X, &Y, &EXP_DIFF))
+    });
 }
 
 // Harness for multiplication by BigUint with inputs and expected result
@@ -175,21 +175,18 @@ pub fn bench_mul_big(c: &mut Criterion) {
     });
 }
 
-// Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust(c: &mut Criterion) {
     c.bench_function("4. Multiplication in Rust (mont1 blog) X 1000 iterations", |b| {
         b.iter(|| mul_rust(&X, &Y, &EXP_PROD))
     });
 }
 
-// Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust_raw(c: &mut Criterion) {
     c.bench_function("5. Multiplication in flat Rust X 1000 iterations", |b| {
         b.iter(|| mul_rust_raw(&X, &Y, &EXP_PROD))
     });
 }
 
-// Harness for multiplication in Rust with inputs and expected result
 pub fn bench_mul_rust_intrinsics(c: &mut Criterion) {
     c.bench_function("6. Multiplication in Rust with intrinsics X 1000 iterations", |b| {
         b.iter(|| mul_rust_intrinsics(&X, &Y, &EXP_PROD))

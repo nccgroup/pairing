@@ -23,7 +23,15 @@ assembly language.
 
 ## Montgomery arithmetic (2 of 2)
 
-* Coming soon...
+This second post takes the Montgomery multiplication algorithm developed
+in Rust even further to seek the maximum performance a modern x86-64 machine
+can deliver from an implementation hand-written in assembly language.
+Several specialized instructions and advanced micro-architectural features
+enabling increased parallelism result in the Montgomery multiplication
+routine running more than 15X faster than a generic Big Integer implementation.
+
+* The blog post: <https://coming.soon/>
+* The full code and README is in the `mont2` subdirectory: <https://github.com/nccgroup/pairing/tree/main/mont2>
 
 ---
 

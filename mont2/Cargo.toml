@@ -17,12 +17,12 @@ build = "src/build.rs"
 
 
 [build-dependencies]
-cc = "1.0.69"
+cc = "1.0.70"
 
 
 [dev-dependencies]
 rand = "0.8.4"
-num-bigint = "0.4.0"
+num-bigint = "0.4.2"
 num-traits = "0.2.14"
 criterion = {version = "0.3.5", features = ["html_reports"] }
 lazy_static = "1.4.0"
