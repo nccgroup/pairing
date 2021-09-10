@@ -30,7 +30,7 @@ Several specialized instructions and advanced micro-architectural features
 enabling increased parallelism result in the Montgomery multiplication
 routine running more than 15X faster than a generic Big Integer implementation.
 
-* The blog post: <https://coming.soon/>
+* The blog post: <https://research.nccgroup.com/2021/09/10/optimizing-pairing-based-cryptography-montgomery-multiplication-in-assembly/>
 * The full code and README is in the `mont2` subdirectory: <https://github.com/nccgroup/pairing/tree/main/mont2>
 
 ---

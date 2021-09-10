@@ -7,7 +7,7 @@ post covering Montgomery Multiplication in Assembly.
 > **Please note:** This code is for educational purposes, has not undergone
 > a security audit and is not suitable for production. Use at your own risk.
 
-* The blog post: <https://coming.soon>
+* The blog post: <https://research.nccgroup.com/2021/09/10/optimizing-pairing-based-cryptography-montgomery-multiplication-in-assembly/>
 
 > This is the second blog post in a new code-centric series about selected 
 > optimizations found in pairing-based cryptography. The first post in this 
